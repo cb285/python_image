@@ -4,13 +4,17 @@ Simple image processing library for python
 Planned Features:
 
 image reading/writing:
-  supported filetypes: png, tif, ppm, pgm
-  file IO implemented in C/C++ (https://docs.python.org/3.4/extending/extending.html)
-  functions: img.imread(filename), img.imwrite(filename)
+      supported filetypes: pbm, ppm, pgm, tif, png
+      pbm, ppm, pgm implemented in python (or C/C++) (https://docs.python.org/3.4/extending/extending.html)
+      png implemented in C/C++ (libpng)
+      functions:
+	img.imread(filename)
+	img.imwrite(filename)
 
 displaying images:
-  implemented by calling external program (JImage?)
-  functions: img.imshow(title)
+	   implemented by calling external program (JImage?)
+  	   functions:
+	img.imshow(title)
 	
 image types:
 	gray (2x2), rgb (2x2x3), hsi (2x2x3)
