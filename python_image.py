@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 
+"""
+TODO:
+
+- reading/writing ppm
+- indexing using bool image
+- fft2, ifft2
+- reading/writing png files
+- hsi representation
+
+"""
+
 import numpy as np
+from math import cos, acos
 from copy import deepcopy
 from subprocess import Popen
 from os import setpgrp
 import numbers
 import png
-
-class ImageReadError(Exception):
-    pass
 
 PADTYPE_NONE = "none"
 PADTYPE_ZERO = "zero"
@@ -17,215 +26,113 @@ PADTYPE_SAME = "same"
 #IMSHOW_PROGRAM = "imagej"
 IMSHOW_PROGRAM = "emacs"
 
-
-class Img():
-
-    """
-    Function: __init__
-    runs when instance of class is created
-    """
-    def __init__(self, arg=(0,0)):
+class Img(np.ndarray):
+    
+    def __new__(subtype, shape=(1,1), dtype=np.uint8, buffer=None, offset=0,
+                strides=None, order=None):
         
-        # if arg is dimensions, create an empty image of that size
-        if(type(arg) is tuple):
-            self.shape = arg
-            self._img_data = np.zeros(self.shape, np.uint8)
-            self._padtype = PADTYPE_NONE
+        obj = super(Img, subtype).__new__(subtype, shape, dtype,
+                                          buffer, offset, strides,
+                                          order)
+        
+        # fill array with zeros
+        obj.fill(0)
+        
+        # set padtype to none
+        obj._padtype = PADTYPE_NONE
+        
+        # return newly created instance
+        return obj
 
-        # if arg is a filename, read the image
-        elif(type(arg) is str):
-            self.imread(arg)
-            self._padtype = PADTYPE_NONE
+    def __getitem__(self, index):
 
-        # if arg is another image, copy the image
-        elif(type(arg) is type(self)):
-            self.shape = deepcopy(arg.shape) # tuples are immutable, but their elements might not be
-            self._img_data = arg._img_data.copy() # arrays are mutable
-            self._padtype = PADTYPE_NONE
-        # if arg is a numpy array
-        elif(type(arg) is np.ndarray):
-            self.shape = arg.shape
-            self._img_data = arg.copy()
-            self._padtype = PADTYPE_NONE
+        #print("index = ", index)
+        
+        try:
+            return super(Img, self).__getitem__(index)
+        
+        except IndexError:
 
-
-    """
-    Function: __repr__
-    defines class's print() and repr() behavior
-    """
-    def __repr__(self):
-        # print the dimensions
-        s = "shape:" + str(self.shape[0]) + "x" + str(self.shape[1]) + "\n"
-        # print the data type
-        s = s + "dtype:" + str(self.dtype()) + "\n"
-        # print the array of data
-        s = s + str(self._img_data)
-        return s
-
-    """
-    Function: __getitem__
-    defines indexing when retrieving elements of image (e.g. a[3, 21])
-    """
-    def __getitem__(self, tup):
-        # if index is for three dimensions
-        if(len(tup) == 3):
-            y, x, z = tup
-
-            # if this image has three dimensions
-            if(len(self.shape) == 3):
-                # check if padding is enabled
-                if(self._padtype == PADTYPE_NONE):
-                    return self._img_data[z, y, x]
-                else:
-                    # check if out of bounds
-                    raise Exception("padding unsupported on 3d images")
-            # if does not have three dimensions, throw exception
-            else:
-                raise ValueError("invalid index for a 2d image")
-
-        # if index is for two dimensions
-        if(len(tup) == 2):
-            y, x = tup
-            # if padding is disabled
+            # if padding is disabled, re-raise exception
             if(self._padtype == PADTYPE_NONE):
-                # if image is three dimensions
-                if (len(self.shape) == 3):
-                    # return three values
-                    return self._img_data[:, y, x]
-                # if two dimensions
-                else:
-                    return self._img_data[y, x]
-                # if padding is enabled
-            else:
-                # if out of bounds
-                if((y < 0) or (y >= self.shape[0]) or (x < 0) or (x >= self.shape[1])):
-                    if(self._padtype == PADTYPE_ZERO):
-                        return 0
-                    elif(self._padtype == PADTYPE_SAME):
-                        # if inside x dimensions
-                        if(not ((x < 0) or (x >= self.shape[1]))):
-                            # if on top of image
-                            if(y < 0):
-                                # return closest pixel
-                                return(self[0, x])
-                            # if on bottom of image
-                            else:
-                                # return closest pixel
-                                return(self[self.shape[0] - 1, x])
-                            # if inside y dimensions
-                        elif(not ((y < 0) or (y >= self.shape[0]))):
-                            # if left of image
-                            if(x < 0):
-                                # return closest pixel
-                                return(self[y, 0])
-                            # if to right of image
-                            else:
-                                # return closest pixel
-                                return(self[y, self.shape[1] - 1])
-                            # if outside both x and y dimensions (corners)
-                        else:
-                            # top left
-                            if(x < 0 and y < 0):
-                                # return corner pixel
-                                return(self[0,0])
-                            # top right
-                            elif(y < 0):
-                                # return corner pixel
-                                return(self[0, self.shape[1] - 1])
-                            # bottom left
-                            elif(x < 0):
-                                # return corner pixel
-                                return(self[self.shape[0] - 1, 0])
-                            # bottom left
-                            else:
-                                # return corner pixel
-                                return(self[self.shape[0] - 1, self.shape[1] - 1])
-                # if in bounds
-                else:
-                    # if image is three dimensions
-                    if (len(self.shape) == 3):
-                        # return three values
-                        return self._img_data[:, y, x]
-                    # if two dimensions
-                    else:
-                        return self._img_data[y, x]
+                raise
+
+            # if pad type is zero, return zero
+            if(self._padtype == PADTYPE_ZERO):
+                return (self.dtype)(0)
             
-    def __setitem__(self, tup, val):
-        if(len(tup) == 3):
-            y, x, z = tup
-            self._img_data[z, y, x] = val
+            # index == (z, y, x)
+
+            # if index has one dimension
+            if(len(index) == 1):
+                z = index[0]
+
+                if(z < 0):
+                    return self[0]
+                else:
+                    return self[self.shape[0] - 1]
+
+            # if index has two dimensions
+            if(len(index) == 2):
+
+                y, x = index
+                
+                y, x = self._get_xy_same_ind(y, x)
+
+                print(y,x)
+                
+                return self[y, x]
+
+            if(len(index) == 3):
+
+                z, y, x = index
+
+                y, x = self._get_xy_same_ind(y, x)
+                
+                if(z < 0):
+                    return self[0, y, x]
+                elif(z >= self.shape[0]):
+                    return self[self.shape[0] - 1, y, x]
+                else:
+                    return self[z, y, x]
+
+    def _get_xy_same_ind(self, y, x):
+
+        print("index =", y, x)
         
-        if(len(tup) == 2):
-            y, x = tup
-            if (len(self.shape) == 3):
-                self._img_data[:, y, x] = val
+        # top
+        if(y < 0):
+            # left
+            if(x < 0):
+                return 0, 0
+            # right
+            elif(x >= self.shape[1]):
+                return 0, self.shape[1] - 1
+            # inside
             else:
-                self._img_data[y,x] = val
+                return 0, x
+            
+        # bottom
+        elif(y >= self.shape[0]):
+            # left
+            if(x < 0):
+                return self.shape[0] - 1, 0
+            # right
+            elif(x >= self.shape[1]):
+                return self.shape[0] - 1, self.shape[1] - 1
+            # inside
+            else:
+                return self.shape[0] - 1, x
 
-    # addition
-    def __add__(self, other):
-        new_img = Img(self)
-        new_img._img_data = new_img._img_data + other
-        return new_img
-
-    __radd__ = __add__
-    
-    # subtraction
-    def __sub__(self, other):
-        new_img = Img(self)
-        new_img._img_data = new_img._img_data - other
-        return new_img
-
-    __rsub__ = __sub__
-    
-    # multiplication (self * other)
-    def __mul__(self, other):
-        new_img = Img(self)
-        new_img._img_data = new_img._img_data * other
-        return new_img
-    
-    # reverse multiplication (other * self)
-    __rmul__ = __mul__
-
-    # integer division
-    # division
-    def __floordiv__(self, other):
-        new_img = Img(self)
-        new_img._img_data = new_img._img_data // other
-        return new_img
-
-    
-    # division
-    def __truediv__(self, other):
-        new_img = Img(self)
-        new_img._img_data = new_img._img_data / other
-        return new_img
-
-    # equal
-    def __eq__(self, other):
-        # returns bool array
-        result_array = self._img_data == other
-        # convert to uint8 array of 1's and 0's
-        result_array.astype("uint8")
-
-    def equals(self, other):
-        # if both are images
-        if(type(other) is Img):
-            return np.arrayequal(self._img_data, other._img_data)
-        # if other is a numpy array
-        elif(type(other) is type(self._img_data)):
-            return np.arrayequal(self._img_data, other)
-        # otherwise, error
+        # left
+        elif(x < 0):
+            return y, 0
+        # right
+        elif(x >= self.shape[1]):
+            return y, self.shape[1] - 1
         else:
-            raise ValueError("operand must either be an image or numpy array")
-
-    def dtype(self, dt=False):
-        if(not dt):
-            return self._img_data.dtype
-        else:
-            self._img_data = self._img_data.astype(dt)
-            return self
-
+            return -1, -1
+                
     def padtype(self, padtype=False):
         # if no argument given, return current padtype
         if(not padtype):
@@ -238,6 +145,51 @@ class Img():
         
         return self
 
+    def _rgb2hsi(self, r, g, b):
+        
+        theta = acos(0.5*((r - g) + (r - b)) / ((r - g)**2 + (r - b)*(g - b))**(1/2))
+
+        if(b <= g):
+            h = theta
+        else:
+            h = 360 - theta
+
+        s = 1 - (3 / (r + g + b))*min(r, g, b)
+
+        i = (1/3)*(r + g + b)
+
+        h = h / 360
+        
+        return h, s, i
+
+    def _hsi2rgb(self, h, s, i):
+
+        h = 360 * h
+
+        # RG sector
+        if(0 <= h and h < 120):
+
+            r = i*(1 + (s*cos(h) / cos(60 - h)))
+            g = 3*i - (r + b)
+            b = i*(1 - s)
+
+        # GB sector
+        elif(120 <= h and h < 240):
+
+            h = h - 120
+            r = i*(1 - s)
+            g = i*(1 + (s*cos(h) / cos(60 - h)))
+            b = 3*i - (r + g)
+
+        # BR sector
+        else:
+            h = h - 240
+            r = 3*i - (g + b)
+            g = i*(1 - s)
+            b = i*(1 + (s*cos(h) / cos(60 - h)))
+
+        return r, g, b
+    
     def conv2(self, mask, padtype=False):
 
         # check if mask is valid type
@@ -299,21 +251,12 @@ class Img():
     def imshow(self, title):
         # if three dimensions
         if(len(self.shape) == 3):
-            # if is in hsi
-            if(self._hsi):
-                # convert to rgb
-                pass
-            # if in rgb
-            else:
-                write_image = self
-                ext = ".ppm"
+            write_image = self
+            ext = ".ppm"
         # if two dimensions
         elif(len(self.shape) == 2):
-            # check if black and white image
-            # get count of each unique value
-            values, counts = np.unique(self._img_data, return_counts=True)
-            # if only two unique values (0 and 1), then write to pbm
-            if(len(counts) == 2 and ((values[0] == 1 and values[1] == 0) or (values[0] == 0 and values[1] == 1))):
+            # if it is bool image, write to b/w
+            if(self._img_data.dtype is bool):
                 ext = ".pbm"
             else:
                 ext = ".pgm"
@@ -348,6 +291,9 @@ class Img():
         # ppm
         elif (ext == "ppm"):
             self._read_ppm(filename)
+        # png
+        elif(ext == "png"):
+            self._read_png(filename)
         else:
             raise ImageReadError("invalid/unsupported image format")
         
@@ -367,16 +313,16 @@ class Img():
             self._write_pgm(filename)
         # ppm
         elif (ext == "ppm"):
-            raise ImageReadError("invalid/unsupported image format")
-            #self._write_ppm(filename)
+            self._write_ppm(filename)
         else:
             raise ImageReadError("invalid/unsupported image format")
 
         return self
-    
-    def fill(self, val):
-        self._img_data.fill(val)
-        return self
+
+    def _read_png(self, filename):
+        r = png.Reader(filename=filename).read()
+
+        print(r[0])
     
     def _read_pbm(self, filename):
         
@@ -387,10 +333,9 @@ class Img():
         n, m = map(int, flines[1].decode("utf-8").split(" "))
         dlines = flines[2:]
 
-        # store image info
-        self.shape = (m, n)
-        self._img_data = np.zeros(self.shape, np.uint8)
-        
+        self.shape = m, n
+        self.dtype = np.uint8
+
         # ASCII format
         if(magic == "P1"):
             
@@ -411,7 +356,7 @@ class Img():
             # put data into array
             for j in range(self.shape[0]):
                 for i in range(self.shape[1]):
-                    self._img_data[j, i] = 1 - int(data[self.shape[1]*j+i])
+                    self[j, i] = 1 - bool(data[self.shape[1]*j+i])
             
             return self
         
@@ -431,7 +376,7 @@ class Img():
                     byte_num = int(pixel_num / 8)
                     shift = 7 - pixel_num % 8
                     
-                    self._img_data[j, i] = ((data[byte_num] & (1 << shift)) >> shift)
+                    self[j, i] = bool((data[byte_num] & (1 << shift)) >> shift)
                     
             return self
             
@@ -477,9 +422,8 @@ class Img():
         n, m = map(int, f.readline().decode("utf-8").strip().split(" "))
         max_val = int(f.readline().decode("utf-8").strip())
 
-        # store image info
-        self.shape = (m, n)
-        self._img_data = np.zeros(self.shape, np.uint8)
+        self.shape = m, n
+        self.dtype = np.uint8
 
         # ASCII format
         if(magic == "P2"):
@@ -503,15 +447,15 @@ class Img():
             # put data into array
             for j in range(self.shape[0]):
                 for i in range(self.shape[1]):
-                    self._img_data[j, i] = int(255*(float(data[self.shape[1]*j+i])/max_val))
+                    self[j, i] = int(255*(float(data[self.shape[1]*j+i])/max_val))
         
         # binary format
         elif (magic == "P5"):
             # put data into array
             for j in range(self.shape[0]):
                 for i in range(self.shape[1]):
-                    self._img_data[j, i] = int.from_bytes(f.read(1), byteorder="big")
-            
+                    self[j, i] = int.from_bytes(f.read(1), byteorder="big")
+
         else:
             raise ImageReadError("invalid \"magic number\" for pbm")
 
@@ -519,4 +463,76 @@ class Img():
         return self
     
     def _read_ppm(self, filename):
-        raise ImageReadError("unsupported image format")
+        f = open(filename, "rb")
+
+        # read header
+        magic = f.readline().decode("utf-8").strip()
+        n, m = map(int, f.readline().decode("utf-8").strip().split(" "))
+        max_val = int(f.readline().decode("utf-8").strip())
+
+        self.shape = (3, m, n)
+        self.dtype = np.uint8
+        
+        #print("shape= " + str(self.shape))
+        
+        # ASCII format
+        if(magic == "P3"):
+            
+            data = list()
+
+            dlines = f.readlines()
+            
+            for line in dlines:
+                line_words = line.decode("utf-8").split(" ")
+                for w in line_words:
+                    # remove special characters
+                    w.strip()
+                    # skip comments and empty words
+                    if(len(w) == 0):
+                        continue
+                    elif(w[0] == "#"):
+                        break
+                    data.append(w.strip())
+
+            #print("data: ", data)
+
+            pixel_num = 0
+
+            # put data into array
+            for j in range(self.shape[1]):
+                for i in range(self.shape[0]):
+                    for p in range(3):
+                        #print("img[",p,",",j,",",i,"] = ", int(255*(float(data[pixel_num])/max_val)))
+                        self[p, j, i] = int(255*(float(data[pixel_num])/max_val))
+                        pixel_num += 1
+        
+        # binary format
+        elif (magic == "P6"):
+            # put data into array
+            for j in range(self.shape[0]):
+                for i in range(self.shape[1]):
+                    for p in range(3):
+                        self[p, j, i] = int.from_bytes(f.read(1), byteorder="big")
+            
+        else:
+            raise ImageReadError("invalid \"magic number\" for ppm")
+
+        f.close()        
+        return self
+
+    def _write_ppm(self, filename):
+        with open(filename, "wb") as f:
+            # write "magic" string
+            f.write("P6\n".encode("utf-8"))
+            # write size
+            f.write((str(self.shape[1]) + " " + str(self.shape[0]) + "\n").encode("utf-8"))
+            # write max value
+            f.write("255\n".encode("utf-8"))
+
+            # reshape to 1-d array
+            reshaped = np.reshape(self._img_data, -1, order='F')
+            
+            # write image data
+            reshaped.tofile(f)
+            
+        return self
