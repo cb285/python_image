@@ -333,7 +333,7 @@ class Img(np.ndarray):
         n, m = map(int, flines[1].decode("utf-8").split(" "))
         dlines = flines[2:]
 
-        self.shape = m, n
+        self.resize((m, n), refcheck=False)
         self.dtype = np.uint8
 
         # ASCII format
@@ -422,7 +422,7 @@ class Img(np.ndarray):
         n, m = map(int, f.readline().decode("utf-8").strip().split(" "))
         max_val = int(f.readline().decode("utf-8").strip())
 
-        self.shape = m, n
+        self.resize((m, n), refcheck=False)
         self.dtype = np.uint8
 
         # ASCII format
@@ -470,7 +470,8 @@ class Img(np.ndarray):
         n, m = map(int, f.readline().decode("utf-8").strip().split(" "))
         max_val = int(f.readline().decode("utf-8").strip())
 
-        self.shape = (3, m, n)
+
+        self.resize((3, m, n), refcheck=False)
         self.dtype = np.uint8
         
         #print("shape= " + str(self.shape))
