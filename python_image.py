@@ -7,12 +7,13 @@ TODO:
 - indexing using bool image
 - fft2, ifft2
 - reading/writing png files
-- hsi representation
+- hsi/rgb conversion
+- prevent uint8 rollover
 
 """
 
 import numpy as np
-from math import cos, acos
+from math import cos, acos, sqrt, pow, degrees
 from copy import deepcopy
 from subprocess import Popen
 from os import setpgrp
@@ -132,7 +133,7 @@ class Img(np.ndarray):
             return y, self.shape[1] - 1
         else:
             return -1, -1
-                
+
     def padtype(self, padtype=False):
         # if no argument given, return current padtype
         if(not padtype):
@@ -142,53 +143,84 @@ class Img(np.ndarray):
             self._padtype = padtype
         else:
             raise ValueError("invalid argument for padtype")
-        
+
         return self
 
-    def _rgb2hsi(self, r, g, b):
+    def rgb2hsi(self):
+        r = self[0,:,:]
+        g = self[1,:,:]
+        b = self[2,:,:]
         
-        theta = acos(0.5*((r - g) + (r - b)) / ((r - g)**2 + (r - b)*(g - b))**(1/2))
-
-        if(b <= g):
-            h = theta
-        else:
-            h = 360 - theta
-
-        s = 1 - (3 / (r + g + b))*min(r, g, b)
-
-        i = (1/3)*(r + g + b)
-
-        h = h / 360
+        num = 0.5 * ((r - g) + (r - b))
+        den = np.sqrt(((r - g)*(r - g)) + (r - b)*(g - b))
         
-        return h, s, i
+        ind = np.zeros(shape=r.shape, dtype=bool)
+        theta = np.zeros(shape=r.shape, dtype=float)
 
-    def _hsi2rgb(self, h, s, i):
+        ind = (den != 0)
 
-        h = 360 * h
+        h = np.zeros(shape=r.shape, dtype=float)
+        
+        h[ind] = np.arccos(num[ind] / den[ind]) / (2*np.pi)
+
+        ind = b > g
+        
+        h[ind] = 1 - theta[ind]
+
+        # calculate intensity
+        i = (r + g + b) / 3
+        
+        s = np.zeros(shape=r.shape, dtype=float)
+
+        # calculate saturation
+        ind = i != 0
+        s[ind] = 1 - np.minimum(np.minimum(r, g), b)[ind] / i[ind]
+
+        # return in new image
+        hsi = Img(shape=self.shape, dtype=float)
+        
+        hsi[0,:,:] = h
+        hsi[1,:,:] = s
+        hsi[2,:,:] = i
+
+        return hsi
+
+    def hsi2rgb(self):
+
+        h = self[0,:,:]*2*np.pi
+        s = self[1,:,:]
+        i = self[2,:,:]
+
+        r = np.zeros(shape=h.shape, dtype=float)
+        g = np.zeros(shape=h.shape, dtype=float)
+        b = np.zeros(shape=h.shape, dtype=float)
 
         # RG sector
-        if(0 <= h and h < 120):
-
-            r = i*(1 + (s*cos(h) / cos(60 - h)))
-            g = 3*i - (r + b)
-            b = i*(1 - s)
-
+        ind = np.logical_and(0 <= h, h < radians(120))
+        b[ind] = i[ind]*(1 - s[ind])
+        r[ind] = i[ind]*(1 + (s[ind]*(np.cos(h[ind]))) / np.cos(radians(60) - h[ind]))
+        g[ind] = 3*i[ind] - (r[ind] + b[ind])
+        
         # GB sector
-        elif(120 <= h and h < 240):
+        ind = np.logical_and(radians(120) <= h, H < radians(240))
+        r[ind] = i[ind]*(1 - s[ind])
+        g[ind] = i[ind]*(1 + (s[ind]*np.cos(h[ind] - radians(120)) / np.cos(radians(60) - h[ind] - radians(120))))
+        b[ind] = 3*i[ind] - (r[ind] - g[ind])
+        
+        # RB sector
+        ind = np.logical_and(radians(240) <= h, h <= radians(360))
+        g[ind] = i[ind]*(1 - s[ind])
+        b[ind] = i[ind]*(1 + s[ind]*np.cos(h[ind] - radians(240)) / np.cos(radians(60) - h[ind] - radians(240)))
+        r[ind] = 3*i[ind] - (g[ind] - b[ind])
 
-            h = h - 120
-            r = i*(1 - s)
-            g = i*(1 + (s*cos(h) / cos(60 - h)))
-            b = 3*i - (r + g)
+        # return in new image
+        rgb = Img(shape=self.shape, dtype=float)
+        
+        rgb[0,:,:] = r
+        rgb[1,:,:] = g
+        rgb[2,:,:] = b
 
-        # BR sector
-        else:
-            h = h - 240
-            r = 3*i - (g + b)
-            g = i*(1 - s)
-            b = i*(1 + (s*cos(h) / cos(60 - h)))
-
-        return r, g, b
+        return hsi
     
     def conv2(self, mask, padtype=False):
 
@@ -388,7 +420,7 @@ class Img(np.ndarray):
     def _write_pbm(self, filename):
 
         # invert values
-        write_data = 1 - self._img_data
+        write_data = 1 - self
 
         with open(filename, "wb") as f:
             # write "magic" string
@@ -396,7 +428,7 @@ class Img(np.ndarray):
             # write size
             f.write((str(self.shape[1]) + " " + str(self.shape[0]) + "\n").encode("utf-8"))
             # write image data
-            np.packbits(self._img_data, axis=-1).tofile(f)
+            np.packbits(self, axis=-1).tofile(f)
 
         return self
 
@@ -410,7 +442,7 @@ class Img(np.ndarray):
             f.write("255\n".encode("utf-8"))
             
             # write image data
-            self._img_data.tofile(f) #unpackbits(self._img_data, , axis=-1)
+            self.tofile(f) #unpackbits(self._img_data, , axis=-1)
             
         return self
     
@@ -470,12 +502,9 @@ class Img(np.ndarray):
         n, m = map(int, f.readline().decode("utf-8").strip().split(" "))
         max_val = int(f.readline().decode("utf-8").strip())
 
-
         self.resize((3, m, n), refcheck=False)
         self.dtype = np.uint8
-        
-        #print("shape= " + str(self.shape))
-        
+                
         # ASCII format
         if(magic == "P3"):
             
@@ -494,8 +523,6 @@ class Img(np.ndarray):
                     elif(w[0] == "#"):
                         break
                     data.append(w.strip())
-
-            #print("data: ", data)
 
             pixel_num = 0
 
@@ -526,12 +553,14 @@ class Img(np.ndarray):
             # write "magic" string
             f.write("P6\n".encode("utf-8"))
             # write size
-            f.write((str(self.shape[1]) + " " + str(self.shape[0]) + "\n").encode("utf-8"))
+            f.write((str(self.shape[2]) + " " + str(self.shape[1]) + "\n").encode("utf-8"))
             # write max value
             f.write("255\n".encode("utf-8"))
 
             # reshape to 1-d array
-            reshaped = np.reshape(self._img_data, -1, order='F')
+            reshaped = self.swapaxes(1, 2).flatten(order='F')
+
+            print("reshaped:", reshaped)
             
             # write image data
             reshaped.tofile(f)
