@@ -3,17 +3,15 @@
 """
 TODO:
 
-- reading/writing ppm
-- indexing using bool image
-- fft2, ifft2
+- fix padding
+- fft2, ifft2 (with padding)
 - reading/writing png files
-- hsi/rgb conversion
-- prevent uint8 rollover
+- prevent uint8 rollover (?)
 
 """
 
 import numpy as np
-from math import cos, acos, sqrt, pow, degrees
+from math import cos, acos, sqrt, pow, radians
 from copy import deepcopy
 from subprocess import Popen
 from os import setpgrp
@@ -24,8 +22,8 @@ PADTYPE_NONE = "none"
 PADTYPE_ZERO = "zero"
 PADTYPE_SAME = "same"
 
-#IMSHOW_PROGRAM = "imagej"
-IMSHOW_PROGRAM = "emacs"
+IMSHOW_PROGRAM = "imagej"
+#IMSHOW_PROGRAM = "emacs"
 
 class Img(np.ndarray):
     
@@ -39,12 +37,10 @@ class Img(np.ndarray):
         # fill array with zeros
         obj.fill(0)
         
-        # set padtype to none
-        obj._padtype = PADTYPE_NONE
-        
         # return newly created instance
         return obj
 
+    """
     def __getitem__(self, index):
 
         #print("index = ", index)
@@ -96,6 +92,7 @@ class Img(np.ndarray):
                     return self[self.shape[0] - 1, y, x]
                 else:
                     return self[z, y, x]
+    """
 
     def _get_xy_same_ind(self, y, x):
 
@@ -147,9 +144,14 @@ class Img(np.ndarray):
         return self
 
     def rgb2hsi(self):
-        r = self[0,:,:]
-        g = self[1,:,:]
-        b = self[2,:,:]
+
+        if(self.dtype == np.uint8):
+            float_img = self.astype(np.float)
+            float_img = float_img / 255
+        
+        r = float_img[0,:,:]
+        g = float_img[1,:,:]
+        b = float_img[2,:,:]
         
         num = 0.5 * ((r - g) + (r - b))
         den = np.sqrt(((r - g)*(r - g)) + (r - b)*(g - b))
@@ -186,7 +188,7 @@ class Img(np.ndarray):
         return hsi
 
     def hsi2rgb(self):
-
+        
         h = self[0,:,:]*2*np.pi
         s = self[1,:,:]
         i = self[2,:,:]
@@ -198,20 +200,22 @@ class Img(np.ndarray):
         # RG sector
         ind = np.logical_and(0 <= h, h < radians(120))
         b[ind] = i[ind]*(1 - s[ind])
-        r[ind] = i[ind]*(1 + (s[ind]*(np.cos(h[ind]))) / np.cos(radians(60) - h[ind]))
+        r[ind] = i[ind]*(1 + (s[ind]*np.cos(h[ind])) / np.cos(radians(60) - h[ind]))
         g[ind] = 3*i[ind] - (r[ind] + b[ind])
-        
+
         # GB sector
-        ind = np.logical_and(radians(120) <= h, H < radians(240))
+        ind = np.logical_and(radians(120) <= h, h < radians(240))
+        h_gb = h - radians(120)
         r[ind] = i[ind]*(1 - s[ind])
-        g[ind] = i[ind]*(1 + (s[ind]*np.cos(h[ind] - radians(120)) / np.cos(radians(60) - h[ind] - radians(120))))
-        b[ind] = 3*i[ind] - (r[ind] - g[ind])
+        g[ind] = i[ind]*(1 + (s[ind]*np.cos(h_gb[ind]) / np.cos(radians(60) - h_gb[ind])))
+        b[ind] = 3*i[ind] - (r[ind] + g[ind])
         
         # RB sector
         ind = np.logical_and(radians(240) <= h, h <= radians(360))
+        h_rb = h - radians(240)
         g[ind] = i[ind]*(1 - s[ind])
-        b[ind] = i[ind]*(1 + s[ind]*np.cos(h[ind] - radians(240)) / np.cos(radians(60) - h[ind] - radians(240)))
-        r[ind] = 3*i[ind] - (g[ind] - b[ind])
+        b[ind] = i[ind]*(1 + (s[ind]*np.cos(h_rb[ind]) / np.cos(radians(60) - h_rb[ind])))
+        r[ind] = 3*i[ind] - (g[ind] + b[ind])
 
         # return in new image
         rgb = Img(shape=self.shape, dtype=float)
@@ -220,7 +224,7 @@ class Img(np.ndarray):
         rgb[1,:,:] = g
         rgb[2,:,:] = b
 
-        return hsi
+        return rgb
     
     def conv2(self, mask, padtype=False):
 
@@ -346,6 +350,8 @@ class Img(np.ndarray):
         # ppm
         elif (ext == "ppm"):
             self._write_ppm(filename)
+        elif(ext == "png"):
+            self._write_png(filename)
         else:
             raise ImageReadError("invalid/unsupported image format")
 
@@ -355,7 +361,14 @@ class Img(np.ndarray):
         r = png.Reader(filename=filename).read()
 
         print(r[0])
-    
+
+    def _write_png(self, filename):
+
+        with open(filename, 'wb') as f:
+            rows, cols, planes = self.shape
+            writer = png.Writer(cols, rows, greyscale=False, alpha=False, bitdepth=8)
+            writer.write(f, np.reshape(np.rot90(self), (-1, cols*planes)))
+
     def _read_pbm(self, filename):
         
         with open(filename, "rb") as f:
@@ -504,7 +517,7 @@ class Img(np.ndarray):
 
         self.resize((3, m, n), refcheck=False)
         self.dtype = np.uint8
-                
+
         # ASCII format
         if(magic == "P3"):
             
@@ -528,7 +541,7 @@ class Img(np.ndarray):
 
             # put data into array
             for j in range(self.shape[1]):
-                for i in range(self.shape[0]):
+                for i in range(self.shape[2]):
                     for p in range(3):
                         #print("img[",p,",",j,",",i,"] = ", int(255*(float(data[pixel_num])/max_val)))
                         self[p, j, i] = int(255*(float(data[pixel_num])/max_val))
@@ -537,15 +550,15 @@ class Img(np.ndarray):
         # binary format
         elif (magic == "P6"):
             # put data into array
-            for j in range(self.shape[0]):
-                for i in range(self.shape[1]):
+            for j in range(self.shape[1]):
+                for i in range(self.shape[2]):
                     for p in range(3):
-                        self[p, j, i] = int.from_bytes(f.read(1), byteorder="big")
+                        self[p, j, i] = int(255*float(int.from_bytes(f.read(1), byteorder="big")) / max_val)
             
         else:
             raise ImageReadError("invalid \"magic number\" for ppm")
-
-        f.close()        
+        
+        f.close()
         return self
 
     def _write_ppm(self, filename):
@@ -559,8 +572,6 @@ class Img(np.ndarray):
 
             # reshape to 1-d array
             reshaped = self.swapaxes(1, 2).flatten(order='F')
-
-            print("reshaped:", reshaped)
             
             # write image data
             reshaped.tofile(f)
