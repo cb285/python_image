@@ -5,34 +5,52 @@ from python_image import *
 
 def main(args):
     
-    a = Img().imread("images/strawberries.ppm")
-    
-    print("rgb:\n", a)
-    
-    # convert original to hsi
-    a_hsi = a.rgb2hsi()
+    img = imread("images/moon.png")
 
-    print("hsi:\n", a_hsi)
+    original = img.copy()
     
-    # get pixels with hue in [0, .05) or (.9, 1] and saturation in (.465, 1]
-    hsiind = Img(shape=a[0,:,:].shape)
-    hue_ind = np.logical_or(a_hsi[0,:,:] > .7, a_hsi[0,:,:] < .05)
-    sat_ind = a_hsi[1,:,:] > .4
-    ind = np.logical_and(hue_ind, sat_ind)
+    print(img.shape)
 
-    print("ind:\n", ind)
-    
-    # set all other pixels to gray
-    d = a
-    d[0,:,:][np.logical_not(ind)] = 128;
-    d[1,:,:][np.logical_not(ind)] = 128;
-    d[2,:,:][np.logical_not(ind)] = 128;
-    
-    #d.imshow("result")
+    """
+    mask = Img((3,3), dtype=float)
 
-    d.imwrite("ppmwrite.ppm")
-    d._write_png("pngwrite.png")
-    d.imshow("result")
+    mask[0,0] = 0
+    mask[0,1] = 1
+    mask[0,2] = 0
+    mask[1,0] = 1
+    mask[1,1] = -4
+    mask[1,2] = 1
+    mask[2,0] = 0
+    mask[2,1] = 1
+    mask[2,2] = 0
+    mask = -1*mask
+    """
+
+    mask = Img((3,3))
+    mask.fill(1)
+    mask = mask / 9
+
+    print(mask)
+
+    img = img.astype(float)
     
+    img.conv2(mask, PADTYPE_SAME)
+
+    img_max = np.amax(img)
+    img_min = np.amin(img)
+
+    img = 255*((img - img_min) / (img_max - img_min))
+
+    img = img.astype(np.uint8)
+
+    original.imshow(figure=1, block=False)
+    img.imshow(figure=2, block=True)
+
+    print(img.dtype)
+    
+    img.imwrite("conv_image.png")
+
+    print(img[:])
+
 if __name__ == "__main__":
     main(sys.argv)
