@@ -40,7 +40,7 @@ Supported file types:
 # Image File Writing
 `Img.imwrite(filename)`
 
-parameters:
+Parameters:
 - filename: string, name of file to create
 
 Filename extension specifies filetype. Supports same file types as reading.
@@ -69,6 +69,20 @@ Returns:
 - Img, new image filled with zeros
 
 # Pixel addressing
+## 2D image
+`Img[y, x]`
+- y: vertical distance from top of image
+- x: horizontal distance from left of image
+
+## 3D image
+`Img[z, y, x]`
+- z: plane
+  - 0 : Red/Hue
+  - 1 : Green/Saturation
+  - 2 : Blue/Intensity
+- y: vertical distance from top of image
+- x: horizontal distance from left of image
+
 ## Getting pixel value
 Example: `value = img[4, 30]`
 
@@ -94,6 +108,25 @@ Pad types:
 - `PADTYPE_ZERO`: out-of-bounds addressing will return zero
 - `PADTYPE_SAME`: out-of-bounds addressing will return the nearest pixel's value
 
-rbg hsi conversion
-2D convolution
-uint8 rollover
+# RGB & HSI conversion
+`Img.rgb2hsi()`
+
+Returns:
+- Img, hsi representation of RGB image
+
+Example: `hsi = rgb_img.rgb2hsi()`
+
+
+`Img.hsi2rgb()`
+
+Returns:
+- Img, rgb representation of HSI image
+
+# 2D convolution
+`Img.conv2(mask, padtype)`
+
+Performs in-place 2D convolution
+
+Parameters:
+- mask: Img, odd-dimensioned image to use as mask
+- padtype: string constant, specifies padding to be used during convolution (defaults to image's current pad type)
