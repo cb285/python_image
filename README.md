@@ -16,7 +16,7 @@ Simple image processing library for python
 # Numpy inheritance
 python_image's Img type inherits from numpy's ndarray, which allows for compatability with a large number of complex functions provided by numpy. more information can be found [here](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
 
-if for some reason you need to convert between an Img type and ndarray, use the view function.
+if for some reason you need to convert between an Img type and ndarray, use the view function:
 
 Img to ndarray: `img.view(np.ndarray)`
 
@@ -26,12 +26,10 @@ ndarray to Img: `img.view(Img)`
 `imread(filename)`
 
 Parameters:
-
-	- filename: string, name of image file to read
+- filename: string, name of image file to read
 
 Returns:
-
-	- Img, image created by reading file
+- Img, image created by reading file
 
 Example: `img = imread("strawberries.png")`
 
@@ -43,8 +41,7 @@ Supported file types:
 `Img.imwrite(filename)`
 
 parameters:
-
-	- filename: string, name of file to create
+- filename: string, name of file to create
 
 Filename extension specifies filetype. Supports same file types as reading.
 
@@ -54,9 +51,8 @@ Example: `img.imwrite("my_image.png")`
 `Img.imshow(figure, block)`
 
 Parameters:
-
-	- figure: integer, figure number - change for displaying multiple images at one time (default: 1)
-	- block: bool, if True then function blocks until the window is closed (default: True)
+- figure: integer, figure number - change for displaying multiple images at one time (default: 1)
+- block: bool, if True then function blocks until the window is closed (default: True)
 
 Example: `img.imshow(1, False)`
 
@@ -66,13 +62,11 @@ Note: if blocking is disabled then all windows will close when the program finis
 `Img(shape, dtype)`
 
 Parameters:
-
-	- shape: tuple, shape (dimensions) of created array (default: (1, 1))
-	- dtype: data-type (python or numpy), datatype of created image (default: uint8)
+- shape: tuple, shape (dimensions) of created array (default: (1, 1))
+- dtype: data-type (python or numpy), datatype of created image (default: uint8)
 
 Returns:
-
-	- Img, new image filled with zeros
+- Img, new image filled with zeros
 
 # Pixel addressing
 ## Getting pixel value
@@ -86,15 +80,13 @@ Example: `img[43, 12] = value`
 `Img.padtype(padtype)`
 
 Parameters:
-
-	- padtype: padtype, string constant specifying desired pad type
+- padtype: padtype, string constant specifying desired pad type
 
 ## Getting current pad type
 `Img.padtype()`
 
 Returns:
-
-	- string constant, current padtype
+- string constant, current padtype
 
 Pad types:
 
