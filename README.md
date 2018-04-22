@@ -25,6 +25,8 @@ ndarray to Img: `img.view(Img)`
 # Image File Reading
 `imread(filename)`
 
+Reads a file into an image.
+
 Parameters:
 - `filename`: string, name of image file to read
 
@@ -40,6 +42,8 @@ Supported file types:
 # Image File Writing
 `Img.imwrite(filename)`
 
+Writes an image to file.
+
 Parameters:
 - `filename`: string, name of file to create
 
@@ -49,6 +53,8 @@ Example: `img.imwrite("my_image.png")`
 
 # Displaying Images
 `Img.imshow(figure, block)`
+
+Displays an image in a window.
 
 Parameters:
 - `figure`: integer, figure number - change for displaying multiple images at one time (default: 1)
@@ -60,6 +66,8 @@ Note: if blocking is disabled then all windows will close when the program finis
 
 # New Image Creation
 `Img(shape, dtype)`
+
+Creates a new image with specified shape and data type initially filled with zeros.
 
 Parameters:
 - `shape`: tuple, shape (dimensions) of created array (default: (1, 1))
@@ -99,6 +107,8 @@ Parameters:
 ## Getting current pad type
 `Img.padtype()`
 
+Returns the current pad type of the image as a string constant.
+
 Returns:
 - string constant, current padtype
 
@@ -111,6 +121,8 @@ Pad types:
 # RGB & HSI conversion
 `Img.rgb2hsi()`
 
+Converts the image from RGB to HSI representation.
+
 Returns:
 - Img, hsi representation of RGB image
 
@@ -118,6 +130,8 @@ Example: `hsi = rgb_img.rgb2hsi()`
 
 
 `Img.hsi2rgb()`
+
+Converts the image from HSI to RGB representation.
 
 Returns:
 - Img, rgb representation of HSI image
