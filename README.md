@@ -11,12 +11,13 @@ Simple image processing library for python
 `git clone https://github.com/cb285/python_image/`
 
 ## Import
-'from python_image import *` or `import python_image`
+`from python_image import *` or `import python_image`
 
 # Numpy inheritance
-python_image's Img type inherits from numpy's ndarray, which allows for compatability with a large number of complex functions provided by numpy. more information can be found [here.](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
+python_image's Img type inherits from numpy's ndarray, which allows for compatability with a large number of complex functions provided by numpy. more information can be found [here](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
 
 if for some reason you need to convert between an Img type and ndarray, use the view function.
+
 Img to ndarray: `img.view(np.ndarray)`
 
 ndarray to Img: `img.view(Img)`
@@ -25,11 +26,13 @@ ndarray to Img: `img.view(Img)`
 `imread(filename)`
 
 Parameters:
+
 	- filename: string
 
 	  	    name of image file to read
 
 Returns:
+
 	- image created by reading file
 
 Example: `img = imread("strawberries.png")`
@@ -42,7 +45,9 @@ Supported file types:
 `Img.imwrite(filename)`
 
 parameters:
+
 	- filename: string
+
 	  	    name of file to create
 
 - Filename extension specifies filetype
@@ -54,9 +59,11 @@ Example: `img.imwrite("my_image.png")`
 `Img.imshow(figure, block)`
 
 Parameters:
+
 	- figure: integer
 
 	  	  figure number, change for displaying multiple images at one time (default: 1)
+
 	- block: bool
 
 		 if True, function blocks until the window is closed (default: True)
@@ -69,13 +76,16 @@ Note: if blocking is disabled then all windows will close when the program finis
 `Img(shape, dtype)`
 
 Parameters:
+
 	- shape: tuple
 
 		 shape (dimensions) of created array (default: (1, 1))
+
 	- dtype: data-type (python or numpy)
 
 		 datatype of created image (default: uint8)
 Returns:
+
 	- new image filled with zeros
 
 # Pixel addressing
@@ -90,6 +100,7 @@ Example: `img[43, 12] = value`
 `Img.padtype(padtype)`
 
 Parameters:
+
 	- padtype: padtype
 
 	  	   constant specifying desired pad type
@@ -98,9 +109,11 @@ Parameters:
 `Img.padtype()`
 
 Returns:
+
 	- current padtype
 
 Pad types:
+
 - `PADTYPE_NONE`: padding disabled, out-of-bounds addressing will cause an exception (default)
 - `PADTYPE_ZERO`: out-of-bounds addressing will return zero
 - `PADTYPE_SAME`: out-of-bounds addressing will return the nearest pixel's value
