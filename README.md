@@ -22,7 +22,7 @@ Img to ndarray: `img.view(np.ndarray)`
 
 ndarray to Img: `img.view(Img)`
 
-# Image File Reading
+# Reading image files
 `imread(filename)`
 
 Reads a file into an image.
@@ -39,7 +39,7 @@ Supported file types:
 - png
 - NetPBM Formats (pbm, pgm, ppm)
 
-# Image File Writing
+# Writing image files
 `Img.imwrite(filename)`
 
 Writes an image to file.
@@ -51,7 +51,7 @@ Filename extension specifies filetype. Supports same file types as reading.
 
 Example: `img.imwrite("my_image.png")`
 
-# Displaying Images
+# Displaying images
 `Img.imshow(figure, block)`
 
 Displays an image in a window.
@@ -64,7 +64,7 @@ Example: `img.imshow(1, False)`
 
 Note: if blocking is disabled then all windows will close when the program finishes.
 
-# New Image Creation
+# New image creation
 `Img(shape, dtype)`
 
 Creates a new image with specified shape and data type initially filled with zeros.
