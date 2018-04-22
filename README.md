@@ -3,8 +3,9 @@ Simple image processing library for python
 
 # Setup
 ## Install dependencies
-`\# pip3 install numpy`
-`\# pip3 install matplotlib`
+`# pip3 install numpy`
+
+`# pip3 install matplotlib`
 
 ## Clone repository
 `git clone https://github.com/cb285/python_image/`
@@ -13,20 +14,22 @@ Simple image processing library for python
 'from python_image import *` or `import python_image`
 
 # Numpy inheritance
-python_image Img type inherits from numpy's ndarray, which allows for compatability with a large number of complex functions provided by numpy.
-more information can be found [here.](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
+python_image's Img type inherits from numpy's ndarray, which allows for compatability with a large number of complex functions provided by numpy. more information can be found [here.](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
 
 if for some reason you need to convert between an Img type and ndarray, use the view function.
 Img to ndarray: `img.view(np.ndarray)`
+
 ndarray to Img: `img.view(Img)`
 
 # Image File Reading
 `imread(filename)`
 
-parameters:
+Parameters:
 	- filename: string
+
 	  	    name of image file to read
-returns:
+
+Returns:
 	- image created by reading file
 
 Example: `img = imread("strawberries.png")`
@@ -50,10 +53,12 @@ Example: `img.imwrite("my_image.png")`
 # Displaying Images
 `Img.imshow(figure, block)`
 
-parameters:
+Parameters:
 	- figure: integer
+
 	  	  figure number, change for displaying multiple images at one time (default: 1)
 	- block: bool
+
 		 if True, function blocks until the window is closed (default: True)
 
 Example: `img.imshow(1, False)`
@@ -63,12 +68,14 @@ Note: if blocking is disabled then all windows will close when the program finis
 # New Image Creation
 `Img(shape, dtype)`
 
-parameters:
+Parameters:
 	- shape: tuple
+
 		 shape (dimensions) of created array (default: (1, 1))
 	- dtype: data-type (python or numpy)
+
 		 datatype of created image (default: uint8)
-returns:
+Returns:
 	- new image filled with zeros
 
 # Pixel addressing
@@ -82,14 +89,15 @@ Example: `img[43, 12] = value`
 ## Setting pad type:
 `Img.padtype(padtype)`
 
-parameters:
+Parameters:
 	- padtype: padtype
+
 	  	   constant specifying desired pad type
 
 ## Getting current pad type
 `Img.padtype()`
 
-returns:
+Returns:
 	- current padtype
 
 Pad types:
