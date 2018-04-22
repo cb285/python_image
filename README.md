@@ -27,13 +27,11 @@ ndarray to Img: `img.view(Img)`
 
 Parameters:
 
-	- filename: string
-
-	  	    name of image file to read
+	- filename: string, name of image file to read
 
 Returns:
 
-	- image created by reading file
+	- Img, image created by reading file
 
 Example: `img = imread("strawberries.png")`
 
@@ -46,12 +44,9 @@ Supported file types:
 
 parameters:
 
-	- filename: string
+	- filename: string, name of file to create
 
-	  	    name of file to create
-
-- Filename extension specifies filetype
-- Supports same file types as reading
+Filename extension specifies filetype. Supports same file types as reading.
 
 Example: `img.imwrite("my_image.png")`
 
@@ -60,13 +55,8 @@ Example: `img.imwrite("my_image.png")`
 
 Parameters:
 
-	- figure: integer
-
-	  	  figure number, change for displaying multiple images at one time (default: 1)
-
-	- block: bool
-
-		 if True, function blocks until the window is closed (default: True)
+	- figure: integer, figure number - change for displaying multiple images at one time (default: 1)
+	- block: bool, if True then function blocks until the window is closed (default: True)
 
 Example: `img.imshow(1, False)`
 
@@ -77,16 +67,12 @@ Note: if blocking is disabled then all windows will close when the program finis
 
 Parameters:
 
-	- shape: tuple
+	- shape: tuple, shape (dimensions) of created array (default: (1, 1))
+	- dtype: data-type (python or numpy), datatype of created image (default: uint8)
 
-		 shape (dimensions) of created array (default: (1, 1))
-
-	- dtype: data-type (python or numpy)
-
-		 datatype of created image (default: uint8)
 Returns:
 
-	- new image filled with zeros
+	- Img, new image filled with zeros
 
 # Pixel addressing
 ## Getting pixel value
@@ -101,16 +87,14 @@ Example: `img[43, 12] = value`
 
 Parameters:
 
-	- padtype: padtype
-
-	  	   constant specifying desired pad type
+	- padtype: padtype, string constant specifying desired pad type
 
 ## Getting current pad type
 `Img.padtype()`
 
 Returns:
 
-	- current padtype
+	- string constant, current padtype
 
 Pad types:
 
