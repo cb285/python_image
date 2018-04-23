@@ -98,6 +98,12 @@ Example: `value = img[4, 30]`
 Example: `img[43, 12] = value`
 
 # Padding
+
+Pad types:
+- `PADTYPE_NONE`: padding disabled, out-of-bounds addressing will cause an exception (default)
+- `PADTYPE_ZERO`: out-of-bounds addressing will return zero
+- `PADTYPE_SAME`: out-of-bounds addressing will return the nearest pixel's value
+
 ## Setting pad type:
 `Img.padtype(padtype)`
 
@@ -111,12 +117,6 @@ Returns the current pad type of the image as a string constant.
 
 Returns:
 - string constant, current padtype
-
-Pad types:
-
-- `PADTYPE_NONE`: padding disabled, out-of-bounds addressing will cause an exception (default)
-- `PADTYPE_ZERO`: out-of-bounds addressing will return zero
-- `PADTYPE_SAME`: out-of-bounds addressing will return the nearest pixel's value
 
 # RGB & HSI conversion
 `Img.rgb2hsi()`
